@@ -1,0 +1,8 @@
+.idea/*
+main/public/favicon.ico
+main/babel.config.js
+main/jsconfig.json
+main/package.json
+main/package-lock.json
+main/README.md
+main/vue.config.js
