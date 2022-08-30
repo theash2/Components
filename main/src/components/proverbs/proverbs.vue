@@ -1,30 +1,53 @@
 <template>
-  <div class="proverbsContainer" @dblclick="setProverbs">
-    <p>{{dataProverbs.hitokoto}}</p>
-    <p>——{{dataProverbs.from}}</p>
+  <div class="proverbsContainer" @click="debounceSetProverbs">
+    <p>{{ proverb.hitokoto }}</p>
+    <p class="from">{{ '——' + proverb.from }}</p>
   </div>
 </template>
 
 <script>
 import getProverbs from "../../../apis/getProverbs";
-import {reactive, ref, toRefs} from "vue";
+import {DEBOUNCE} from "../../../functions/decoration";
+import {reactive, ref, toRefs, onBeforeMount, onBeforeUnmount} from "vue";
 
 export default {
   name: "proverbsComponent",
   setup() {
-    const dataProverbs = ref({});
+    if (!localStorage.getItem('proverb')) {
+      localStorage.setItem('proverb', '[]');
+    }
+    let proverbCache = JSON.parse(localStorage.getItem('proverb'));
+    const proverb = ref({
+      hitokoto: '',
+      from: ''
+    })
     const setProverbs = () => {
+      let use = proverbCache.shift();
+      if (use == undefined) {
+        use = {
+          hitokoto: '拥抱变化',
+          from: '未知'
+        }
+      }
+      proverb.value.hitokoto = use.hitokoto;
+      proverb.value.from = use.from;
       getProverbs().then(str => {
-        console.log(str)
-        dataProverbs.value = str;
+        str != null ? proverbCache.push(str) : '';
       }).catch(err => {
         console.log('err', err)
       })
-    }
-    setProverbs();
-
+    };
+    const debounceSetProverbs = DEBOUNCE(setProverbs, 500);
+    onBeforeMount(() => {
+      setProverbs();
+    });
+    onBeforeUnmount(() => {
+        localStorage.removeItem('proverb');
+        localStorage.setItem('proverb', JSON.stringify(proverbCache.slice(0,10)));
+    });
     return {
-      dataProverbs,
+      proverb,
+      debounceSetProverbs,
       setProverbs
     }
   }
@@ -32,5 +55,7 @@ export default {
 </script>
 
 <style scoped>
-
+.proverbsContainer {
+  text-align: right;
+}
 </style>
